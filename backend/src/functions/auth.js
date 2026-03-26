@@ -1,0 +1,65 @@
+const { app } = require('@azure/functions');
+const { register, login, refreshAccessToken } = require('../auth');
+
+app.http('register', {
+    methods: ['POST'],
+    authLevel: 'anonymous',
+    handler: async (request, context) => {
+        try {
+            const body = await request.jsonBody();
+            const { name, email, password } = body;
+
+            if (!name || !email || !password) {
+                return { status: 400, jsonBody: { error: 'Name, email, and password are required' } };
+            }
+
+            const result = await register(name, email, password);
+            return { status: 201, jsonBodyBody: result };
+        } catch (error) {
+            context.log.error('Registration error:', error.message);
+            return { status: 400, jsonBodyBody: { error: error.message } };
+        }
+    }
+});
+
+app.http('login', {
+    methods: ['POST'],
+    authLevel: 'anonymous',
+    handler: async (request, context) => {
+        try {
+            const body = await request.jsonBody();
+            const { email, password } = body;
+
+            if (!email || !password) {
+                return { status: 400, jsonBody: { error: 'Email and password are required' } };
+            }
+
+            const result = await login(email, password);
+            return { jsonBodyBody: result };
+        } catch (error) {
+            context.log.error('Login error:', error.message);
+            return { status: 401, jsonBodyBody: { error: error.message } };
+        }
+    }
+});
+
+app.http('refreshToken', {
+    methods: ['POST'],
+    authLevel: 'anonymous',
+    handler: async (request, context) => {
+        try {
+            const body = await request.jsonBody();
+            const { refreshToken } = body;
+
+            if (!refreshToken) {
+                return { status: 400, jsonBody: { error: 'Refresh token is required' } };
+            }
+
+            const result = await refreshAccessToken(refreshToken);
+            return { jsonBody: result };
+        } catch (error) {
+            context.log.error('Refresh token error:', error.message);
+            return { status: 401, jsonBody: { error: error.message } };
+        }
+    }
+});

@@ -1,0 +1,23 @@
+{
+  "name": "Expense Tracker Backend",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-azurefunctions",
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  },
+  "postCreateCommand": "cd backend && npm install && npm install -g azure-functions-core-tools@4 --unsafe-perm true",
+  "forwardPorts": [
+    7071
+  ],
+  "portsAttributes": {
+    "7071": {
+      "label": "Azure Functions",
+      "onAutoForward": "notify"
+    }
+  },
+  "remoteUser": "node"
+}
