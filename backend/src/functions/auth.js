@@ -6,7 +6,7 @@ app.http('register', {
     authLevel: 'anonymous',
     handler: async (request, context) => {
         try {
-            const body = await request.jsonBody();
+            const body = await request.json();
             const { name, email, password } = body;
 
             if (!name || !email || !password) {
@@ -14,10 +14,10 @@ app.http('register', {
             }
 
             const result = await register(name, email, password);
-            return { status: 201, jsonBodyBody: result };
+            return { status: 201, jsonBody: result };
         } catch (error) {
-            context.log.error('Registration error:', error.message);
-            return { status: 400, jsonBodyBody: { error: error.message } };
+            context.log('ERROR:', error.message);
+            return { status: 400, jsonBody: { error: error.message } };
         }
     }
 });
@@ -27,7 +27,7 @@ app.http('login', {
     authLevel: 'anonymous',
     handler: async (request, context) => {
         try {
-            const body = await request.jsonBody();
+            const body = await request.json();
             const { email, password } = body;
 
             if (!email || !password) {
@@ -35,10 +35,10 @@ app.http('login', {
             }
 
             const result = await login(email, password);
-            return { jsonBodyBody: result };
+            return { jsonBody: result };
         } catch (error) {
-            context.log.error('Login error:', error.message);
-            return { status: 401, jsonBodyBody: { error: error.message } };
+            context.log('ERROR:', error.message);
+            return { status: 401, jsonBody: { error: error.message } };
         }
     }
 });
@@ -48,7 +48,7 @@ app.http('refreshToken', {
     authLevel: 'anonymous',
     handler: async (request, context) => {
         try {
-            const body = await request.jsonBody();
+            const body = await request.json();
             const { refreshToken } = body;
 
             if (!refreshToken) {
@@ -58,7 +58,7 @@ app.http('refreshToken', {
             const result = await refreshAccessToken(refreshToken);
             return { jsonBody: result };
         } catch (error) {
-            context.log.error('Refresh token error:', error.message);
+            context.log('ERROR:', error.message);
             return { status: 401, jsonBody: { error: error.message } };
         }
     }

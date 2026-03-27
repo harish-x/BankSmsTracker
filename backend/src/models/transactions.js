@@ -15,6 +15,16 @@ const transactionSchema = new mongoose.Schema({
         enum: ['debit', 'credit']
     },
     tnx_date: Date,
+    merchant:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'MerchantAlias',
+        default: null
+    },
+    category:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+        default: null
+    },
     raw_message: String,
     source_name: String,
     source_vpa: String,

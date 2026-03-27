@@ -1,7 +1,10 @@
 const { app } = require('@azure/functions');
+const { connectToDatabase } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
+const { parseSMS, resolveMerchant, resolveCategory, isTransactionMessage } = require('../utils/smsParser')
 const transactionModel = require('../models/transactions');
-const { parseSMS } = require('../utils/smsParser')
+const AccountModel = require('../models/accounts');
+
 
 app.http('expensemetric', {
     methods: ['POST'],
@@ -13,7 +16,11 @@ app.http('expensemetric', {
             return { status: auth.status, jsonBody: { error: auth.error } };
         }
 
+        const userId = auth.user.userId;
+
         try {
+            await connectToDatabase();
+
             const body = await request.json();
             const { message } = body;
 
@@ -21,11 +28,17 @@ app.http('expensemetric', {
                 return { status: 400, jsonBody: { error: "Message required" } };
             }
 
+            if (!isTransactionMessage(message)) {
+                return {
+                    status: 200,
+                    jsonBody: { message: "Ignored" }
+                };
+            }
             const parsed = parseSMS(message);
 
             if (!parsed || !parsed.amount || !parsed.type) {
                 await transactionModel.create({
-                    user: auth.userId,
+                    user: userId,
                     raw_message: message
                 });
 
@@ -35,15 +48,15 @@ app.http('expensemetric', {
             let accountDoc = null;
 
             if (parsed.bank_name && parsed.account_mask) {
-                accountDoc = await Account.findOneAndUpdate(
+                accountDoc = await AccountModel.findOneAndUpdate(
                     {
-                        user: auth.userId,
+                        user: userId,
                         bank_name: parsed.bank_name,
                         account_mask: parsed.account_mask
                     },
                     {
                         $setOnInsert: {
-                            user: auth.userId,
+                            user: userId,
                             bank_name: parsed.bank_name,
                             account_mask: parsed.account_mask
                         }
@@ -51,16 +64,21 @@ app.http('expensemetric', {
                     { upsert: true, new: true }
                 );
             }
+            const merchant = await resolveMerchant(userId, parsed);
+
+            const category_id = await resolveCategory(userId, merchant);
 
             const transaction = await transactionModel.create({
-                user: auth?.userId,
+                user: userId,
                 account_id: accountDoc?._id,
                 amount: parsed.amount,
                 tnx_type: parsed.type,
                 tnx_date: parsed.date,
                 raw_message: message,
                 source_name: parsed.source_name,
-                source_vpa: parsed.source_vpa
+                source_vpa: parsed.source_vpa,
+                category: category_id,
+                merchant: merchant?._id
             });
 
             return {
@@ -72,11 +90,12 @@ app.http('expensemetric', {
             };
 
         } catch (err) {
-            context.log(err);
+            context.log('ERROR:', err.message);
+            context.log('Stack:', err.stack);
 
             return {
                 status: 500,
-                jsonBody: { error: "Internal server error" }
+                jsonBody: { error: err.message || "Internal server error" }
             };
         }
     }

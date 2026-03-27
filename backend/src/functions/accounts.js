@@ -13,7 +13,7 @@ app.http('createAccount', {
                 return { status: auth.status, jsonBody: { error: auth.error } };
             }
 
-            const body = await request.jsonBody();
+            const body = await request.json();
             const { bank_name, account_mask } = body;
 
             if (!bank_name || !account_mask) {
@@ -32,7 +32,7 @@ app.http('createAccount', {
 
             return { status: 201, jsonBody: { account } };
         } catch (error) {
-            context.log.error('Create account error:', error.message);
+            context.log('ERROR:', error.message);
             return { status: 500, jsonBody: { error: error.message } };
         }
     }
@@ -53,7 +53,7 @@ app.http('updateAccount', {
                 return { status: 400, jsonBody: { error: 'Account ID is required' } };
             }
 
-            const body = await request.jsonBody();
+            const body = await request.json();
             const { bank_name, account_mask } = body;
 
             await connectToDatabase();
@@ -70,7 +70,7 @@ app.http('updateAccount', {
 
             return { jsonBody: { account } };
         } catch (error) {
-            context.log.error('Update account error:', error.message);
+            context.log('ERROR:', error.message);
             return { status: 500, jsonBody: { error: error.message } };
         }
     }
@@ -100,7 +100,7 @@ app.http('deleteAccount', {
 
             return { jsonBody: { message: 'Account deleted successfully' } };
         } catch (error) {
-            context.log.error('Delete account error:', error.message);
+            context.log('ERROR:', error.message);
             return { status: 500, jsonBody: { error: error.message } };
         }
     }
@@ -122,7 +122,7 @@ app.http('getAccounts', {
 
             return { jsonBody: { accounts } };
         } catch (error) {
-            context.log.error('Get accounts error:', error.message);
+            context.log('ERROR:', error.message);
             return { status: 500, jsonBody: { error: error.message } };
         }
     }
