@@ -5,7 +5,7 @@ const { authMiddleware } = require('../middleware/auth');
 
 app.http('createAccount', {
     methods: ['POST'],
-    authLevel: 'function',
+    authLevel: 'anonymous',
     handler: async (request, context) => {
         try {
             const auth = authMiddleware(request);
@@ -40,7 +40,7 @@ app.http('createAccount', {
 
 app.http('updateAccount', {
     methods: ['PUT'],
-    authLevel: 'function',
+    authLevel: 'anonymous',
     handler: async (request, context) => {
         try {
             const auth = authMiddleware(request);
@@ -78,7 +78,7 @@ app.http('updateAccount', {
 
 app.http('deleteAccount', {
     methods: ['DELETE'],
-    authLevel: 'function',
+    authLevel: 'anonymous',
     handler: async (request, context) => {
         try {
             const auth = authMiddleware(request);
@@ -108,7 +108,7 @@ app.http('deleteAccount', {
 
 app.http('getAccounts', {
     methods: ['GET'],
-    authLevel: 'function',
+    authLevel: 'anonymous',
     handler: async (request, context) => {
         try {
             const auth = authMiddleware(request);

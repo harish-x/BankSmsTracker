@@ -8,7 +8,7 @@ const AccountModel = require('../models/accounts');
 
 app.http('expensemetric', {
     methods: ['POST'],
-    authLevel: 'function',
+    authLevel: 'anonymous',
     handler: async (request, context) => {
 
         const auth = authMiddleware(request);
