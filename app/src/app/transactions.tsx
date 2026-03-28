@@ -3,9 +3,11 @@
  * Full searchable list of all transactions with filter by type.
  */
 
-import React, { useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
   TextInput,
@@ -18,6 +20,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CATEGORY_COLORS, CATEGORY_ICONS, CATEGORY_LABELS } from '@/constants/categories';
 import { useTransactions } from '@/hooks/useTransactions';
+import { checkAndSaveSms } from '@/services/smsService';
+import { syncTransactions } from '@/services/syncService';
 import type { Transaction } from '@/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -100,9 +104,28 @@ export default function TransactionsScreen() {
   const isDark = scheme === 'dark';
   const c      = isDark ? DARK : LIGHT;
 
-  const { transactions, loading } = useTransactions();
-  const [search, setSearch]       = useState('');
-  const [filter, setFilter]       = useState<Filter>('all');
+  const { transactions, loading, reload } = useTransactions();
+  const [search, setSearch]               = useState('');
+  const [filter, setFilter]               = useState<Filter>('all');
+  const [refreshing, setRefreshing]       = useState(false);
+
+  // Reload data each time the screen comes into focus (picks up background syncs)
+  useFocusEffect(
+    useCallback(() => {
+      reload();
+    }, [reload])
+  );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await checkAndSaveSms();
+      await syncTransactions();
+      await reload();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [reload]);
 
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
@@ -170,9 +193,17 @@ export default function TransactionsScreen() {
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => <TransactionCard item={item} isDark={isDark} />}
         contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#3B82F6']}
+            tintColor="#3B82F6"
+          />
+        }
         ListEmptyComponent={
           <Text style={[styles.emptyText, { color: c.sub }]}>
-            {search ? 'No results found.' : 'No transactions yet.\nPull down on Dashboard to scan SMS.'}
+            {search ? 'No results found.' : 'No transactions yet.\nPull down to scan SMS.'}
           </Text>
         }
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}

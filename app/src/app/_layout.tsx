@@ -20,6 +20,8 @@ import { Tabs } from 'expo-router';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { ActivityIndicator, AppState, AppStateStatus, useColorScheme, View } from 'react-native';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import LoginScreen from '@/screens/LoginScreen';
 import { checkAndSaveSms } from '@/services/smsService';
@@ -34,6 +36,7 @@ const FOREGROUND_INTERVAL_MS = 5 * 60 * 1000;
 function AppLayout() {
   const colorScheme = useColorScheme();
   const isDark      = colorScheme === 'dark';
+  const insets      = useSafeAreaInsets();
   const { isAuthenticated, isLoading, signIn, signOut } = useAuth();
 
   // Guard: prevents launching concurrent sync runs
@@ -102,8 +105,8 @@ function AppLayout() {
   const tabBarStyle = {
     backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
     borderTopColor:  isDark ? '#1E293B' : '#E2E8F0',
-    height: 64,
-    paddingBottom: 8,
+    height: 64 + insets.bottom,
+    paddingBottom: 8 + insets.bottom,
   };
 
   const activeColor   = '#3B82F6';
