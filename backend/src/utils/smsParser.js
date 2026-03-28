@@ -149,11 +149,30 @@ async function resolveMerchant(userId, parsed) {
     });
 
     if (!merchant) {
+        let category_id = null;
+        for (let rule of categoryRules) {
+            if (key.includes(rule.keyword)) {
+                let category = await Category.findOne({
+                    name: rule.name
+                });
+
+                if (!category) {
+                    category = await Category.create({
+                        user: userId,
+                        name: rule.name
+                    });
+                }
+
+
+                category_id = category._id;
+            }
+        }
         merchant = await MerchantAlias.create({
             user: userId,
             normalized_key,
             original_name: rawName,
-            alias_name: rawName
+            alias_name: rawName,
+            category_id: category_id
         });
     }
 
@@ -198,7 +217,6 @@ async function resolveCategory(userId, merchant) {
     for (let rule of categoryRules) {
         if (key.includes(rule.keyword)) {
             let category = await Category.findOne({
-                user: userId,
                 name: rule.name
             });
 
@@ -248,4 +266,4 @@ const isTransactionMessage = (msg) => {
     return true;
 };
 
-module.exports = { parseSMS, resolveMerchant, resolveCategory, isTransactionMessage };
+module.exports = { parseSMS, resolveMerchant, resolveCategory, isTransactionMessage, normalize };
