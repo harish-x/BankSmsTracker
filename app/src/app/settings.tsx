@@ -291,7 +291,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView
       style={[styles.safe, { backgroundColor: c.bg }]}
-      edges={["bottom"]}
+      edges={["top", "bottom"]}
     >
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Status message */}

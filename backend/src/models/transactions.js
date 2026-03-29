@@ -30,6 +30,6 @@ const transactionSchema = new mongoose.Schema({
     source_vpa: String,
 }, { timestamps: true });
 
-const transaction = mongoose.model('Transactions ', transactionSchema);
+const transaction = mongoose.model('Transactions', transactionSchema);
 
 module.exports = transaction;

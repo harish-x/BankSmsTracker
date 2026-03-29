@@ -16,14 +16,16 @@
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 import { Tabs } from 'expo-router';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, AppStateStatus, useColorScheme, View } from 'react-native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import LoginScreen from '@/screens/LoginScreen';
+import NoNetworkScreen from '@/screens/NoNetworkScreen';
 import { checkAndSaveSms } from '@/services/smsService';
 import { syncTransactions } from '@/services/syncService';
 import { registerBackgroundSync } from '@/tasks/backgroundSync';
@@ -38,6 +40,24 @@ function AppLayout() {
   const isDark      = colorScheme === 'dark';
   const insets      = useSafeAreaInsets();
   const { isAuthenticated, isLoading, signIn, signOut } = useAuth();
+
+  // null = unknown (first render), true/false = determined
+  const [isConnected, setIsConnected] = useState<boolean | null>(null);
+  const wasOffline = useRef(false);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
+      const connected = state.isConnected === true && state.isInternetReachable !== false;
+      setIsConnected(connected);
+      wasOffline.current = !connected;
+    });
+    // Fetch once immediately so we don't flash the no-network screen on first load
+    NetInfo.fetch().then((state: NetInfoState) => {
+      const connected = state.isConnected === true && state.isInternetReachable !== false;
+      setIsConnected(connected);
+    });
+    return unsubscribe;
+  }, []);
 
   // Guard: prevents launching concurrent sync runs
   const isSyncing = useRef(false);
@@ -84,14 +104,28 @@ function AppLayout() {
     };
   }, [isAuthenticated, runAutoSync]);
 
+  // ── When back online after being offline, trigger a sync ─────────────────
+  useEffect(() => {
+    if (isConnected && wasOffline.current && isAuthenticated) {
+      wasOffline.current = false;
+      runAutoSync();
+    }
+  }, [isConnected, isAuthenticated, runAutoSync]);
+
   // ── Loading splash while SecureStore is being read ────────────────────────
 
-  if (isLoading) {
+  if (isLoading || isConnected === null) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: isDark ? '#0F172A' : '#F8FAFC' }}>
         <ActivityIndicator size="large" color="#3B82F6" />
       </View>
     );
+  }
+
+  // ── No internet — show offline screen ────────────────────────────────────
+
+  if (!isConnected) {
+    return <NoNetworkScreen />;
   }
 
   // ── Not authenticated — show login / register screen ──────────────────────
@@ -116,13 +150,8 @@ function AppLayout() {
     <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
       <Tabs
         screenOptions={{
-          tabBarStyle,
-          tabBarActiveTintColor:   activeColor,
-          tabBarInactiveTintColor: inactiveColor,
-          tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
-          headerStyle:      { backgroundColor: isDark ? '#0F172A' : '#F8FAFC' },
-          headerTitleStyle: { color: isDark ? '#F1F5F9' : '#0F172A', fontWeight: '700', fontSize: 18 },
-          headerShadowVisible: false,
+          ...tabBarStyle,
+          headerShown: false,
         }}
       >
         <Tabs.Screen
@@ -154,6 +183,7 @@ function AppLayout() {
         />
         {/* Hide old explore tab */}
         <Tabs.Screen name="explore" options={{ href: null }} />
+        <Tabs.Screen name="transaction/[id]" options={{ href: null }} />
       </Tabs>
     </ThemeProvider>
   );

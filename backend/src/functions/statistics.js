@@ -3,6 +3,7 @@ const { z } = require('zod');
 const transactionModel = require('../models/transactions');
 const { authMiddleware } = require('../middleware/auth');
 const { connectToDatabase } = require('../db');
+const { default: mongoose, mongo } = require('mongoose');
 
 const querySchema = z.object({
     date_from: z.string().optional(),
@@ -59,6 +60,7 @@ app.http('getStatistics', {
 
         const fromDate = date_from ? new Date(date_from) : defaults.from;
         const toDate = date_to ? new Date(date_to) : defaults.to;
+        toDate.setUTCHours(23, 59, 59, 999);
 
         if (isNaN(fromDate) || isNaN(toDate)) {
             return { status: 400, jsonBody: { error: 'Invalid date format. Use ISO 8601 (e.g. 2025-03-01).' } };
@@ -68,10 +70,10 @@ app.http('getStatistics', {
             await connectToDatabase();
 
             const rangeFilter = {
-                user: userId,
+                user: new mongoose.Types.ObjectId(userId),
                 tnx_date: { $gte: fromDate, $lte: toDate },
             };
-            if (account_id) rangeFilter.account_id = account_id;
+            if (account_id) rangeFilter.account_id = new mongoose.Types.ObjectId(account_id);
 
             const rangeAgg = await transactionModel.aggregate([
                 { $match: rangeFilter },
@@ -84,8 +86,8 @@ app.http('getStatistics', {
                 },
             ]);
 
-            const overallFilter = { user: userId };
-            if (account_id) overallFilter.account_id = account_id;
+            const overallFilter = { user: new mongoose.Types.ObjectId(userId) };
+            if (account_id) overallFilter.account_id = new mongoose.Types.ObjectId(account_id);
 
             const overallAgg = await transactionModel.aggregate([
                 { $match: overallFilter },
@@ -101,12 +103,12 @@ app.http('getStatistics', {
             function buildSummary(agg) {
                 const map = {};
                 for (const row of agg) map[row._id] = { total: row.total, count: row.count };
-                const spent  = map['debit']  ?? { total: 0, count: 0 };
+                const spent = map['debit'] ?? { total: 0, count: 0 };
                 const gained = map['credit'] ?? { total: 0, count: 0 };
                 return {
-                    spent:   { amount: spent.total,   count: spent.count },
-                    gained:  { amount: gained.total,  count: gained.count },
-                    net:     gained.total - spent.total,
+                    spent: { amount: spent.total, count: spent.count },
+                    gained: { amount: gained.total, count: gained.count },
+                    net: gained.total - spent.total,
                 };
             }
 
@@ -157,7 +159,7 @@ app.http('getCategoryBreakdown', {
         const defaults = currentMonthRange();
 
         const fromDate = date_from ? new Date(date_from) : defaults.from;
-        const toDate   = date_to   ? new Date(date_to)   : defaults.to;
+        const toDate = date_to ? new Date(date_to) : defaults.to;
 
         if (isNaN(fromDate) || isNaN(toDate)) {
             return { status: 400, jsonBody: { error: 'Invalid date format. Use ISO 8601 (e.g. 2025-03-01).' } };
@@ -167,11 +169,11 @@ app.http('getCategoryBreakdown', {
             await connectToDatabase();
 
             const filter = {
-                user: userId,
+                user: new mongoose.Types.ObjectId(userId),
                 tnx_type,
                 tnx_date: { $gte: fromDate, $lte: toDate },
             };
-            if (account_id) filter.account_id = account_id;
+            if (account_id) filter.account_id = new mongoose.Types.ObjectId(account_id);
 
             const agg = await transactionModel.aggregate([
                 { $match: filter },
@@ -190,7 +192,7 @@ app.http('getCategoryBreakdown', {
                             category_name: { $ifNull: [{ $arrayElemAt: ['$categoryDoc.name', 0] }, 'Others'] },
                         },
                         amount: { $sum: '$amount' },
-                        count:  { $sum: 1 },
+                        count: { $sum: 1 },
                     },
                 },
                 { $sort: { amount: -1 } },
@@ -199,18 +201,17 @@ app.http('getCategoryBreakdown', {
             const total = agg.reduce((sum, row) => sum + row.amount, 0);
 
             const categories = agg.map(row => ({
-                category_id:   row._id.category_id,
+                category_id: row._id.category_id,
                 category_name: row._id.category_name,
-                amount:        row.amount,
-                count:         row.count,
-                percentage:    total > 0 ? parseFloat(((row.amount / total) * 100).toFixed(2)) : 0,
+                amount: row.amount,
+                count: row.count,
+                percentage: total > 0 ? parseFloat(((row.amount / total) * 100).toFixed(2)) : 0,
             }));
-
             return {
                 status: 200,
                 jsonBody: {
-                    date_range:  { from: fromDate, to: toDate },
-                    account_id:  account_id ?? null,
+                    date_range: { from: fromDate, to: toDate },
+                    account_id: account_id ?? null,
                     tnx_type,
                     total,
                     categories,
@@ -234,9 +235,9 @@ app.http('getSpendingTrend', {
         const userId = auth.user.userId;
 
         const rawQuery = {
-            period:     request.query.get('period'),
+            period: request.query.get('period'),
             account_id: request.query.get('account_id'),
-            tnx_type:   request.query.get('tnx_type'),
+            tnx_type: request.query.get('tnx_type'),
         };
         Object.keys(rawQuery).forEach(k => rawQuery[k] == null && delete rawQuery[k]);
 
@@ -270,23 +271,23 @@ app.http('getSpendingTrend', {
             await connectToDatabase();
 
             const filter = {
-                user: userId,
+                user: new mongoose.Types.ObjectId(userId),
                 tnx_type,
                 tnx_date: { $gte: fromDate, $lte: toDate },
             };
-            if (account_id) filter.account_id = account_id;
-
+            if (account_id) filter.account_id = new mongoose.Types.ObjectId(account_id);
+            console.log('Filter for aggregation:', filter);
             const agg = await transactionModel.aggregate([
                 { $match: filter },
                 {
                     $group: {
                         _id: {
-                            year:  { $year:  '$tnx_date' },
+                            year: { $year: '$tnx_date' },
                             month: { $month: '$tnx_date' },
-                            day:   { $dayOfMonth: '$tnx_date' },
+                            day: { $dayOfMonth: '$tnx_date' },
                         },
                         amount: { $sum: '$amount' },
-                        count:  { $sum: 1 },
+                        count: { $sum: 1 },
                     },
                 },
                 { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
@@ -304,22 +305,29 @@ app.http('getSpendingTrend', {
             cursor.setHours(0, 0, 0, 0);
 
             while (cursor <= toDate) {
-                const mm   = String(cursor.getMonth() + 1).padStart(2, '0');
-                const dd   = String(cursor.getDate()).padStart(2, '0');
-                const key  = `${cursor.getFullYear()}-${mm}-${dd}`;
+                const mm = String(cursor.getMonth() + 1).padStart(2, '0');
+                const dd = String(cursor.getDate()).padStart(2, '0');
+                const key = `${cursor.getFullYear()}-${mm}-${dd}`;
                 const data = aggMap[key] ?? { amount: 0, count: 0 };
                 days.push({ date: key, amount: data.amount, count: data.count });
                 cursor.setDate(cursor.getDate() + 1);
             }
 
             const total = days.reduce((sum, d) => sum + d.amount, 0);
-
+            console.log('response:', {
+                period,
+                date_range: { from: fromDate, to: toDate },
+                account_id: account_id ?? null,
+                tnx_type,
+                total,
+                days,
+            });
             return {
                 status: 200,
                 jsonBody: {
                     period,
-                    date_range:  { from: fromDate, to: toDate },
-                    account_id:  account_id ?? null,
+                    date_range: { from: fromDate, to: toDate },
+                    account_id: account_id ?? null,
                     tnx_type,
                     total,
                     days,

@@ -15,6 +15,7 @@ export type Category =
   | 'health'
   | 'transfer'
   | 'fee'
+  | 'alcohol'
   | 'other';
 
 // One parsed transaction

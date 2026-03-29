@@ -7,5 +7,7 @@ app.setup({
 require('./functions/accounts');
 require('./functions/auth');
 require('./functions/expensemetric');
+require("./functions/statistics")
+require("./functions/transaction")
 
 module.exports = app;

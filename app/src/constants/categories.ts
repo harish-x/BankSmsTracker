@@ -11,8 +11,35 @@ export const CATEGORY_COLORS: Record<Category, string> = {
   health:        '#EF4444', // red
   transfer:      '#14B8A6', // teal
   fee:           '#F97316', // orange
+  alcohol:        '#A855F7', // violet
   other:         '#9CA3AF', // gray
 };
+
+// Extra vibrant colors for categories not in the predefined list
+const DYNAMIC_PALETTE = [
+  '#E11D48', '#7C3AED', '#0891B2', '#CA8A04', '#059669',
+  '#DC2626', '#4F46E5', '#0D9488', '#D97706', '#9333EA',
+  '#2563EB', '#C026D3', '#65A30D', '#EA580C', '#0284C7',
+];
+
+const dynamicColorCache: Record<string, string> = {};
+
+/** Returns the known color for a category, or a stable dynamic color for unknown ones. */
+export function getCategoryColor(name: string): string {
+  const key = name.toLowerCase();
+  if (key in CATEGORY_COLORS) {
+    return CATEGORY_COLORS[key as Category];
+  }
+  if (!dynamicColorCache[key]) {
+    // Simple hash to pick a palette color deterministically
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+      hash = ((hash << 5) - hash + key.charCodeAt(i)) | 0;
+    }
+    dynamicColorCache[key] = DYNAMIC_PALETTE[Math.abs(hash) % DYNAMIC_PALETTE.length];
+  }
+  return dynamicColorCache[key];
+}
 
 // Emoji icon for each category (shown in transaction list)
 export const CATEGORY_ICONS: Record<Category, string> = {
@@ -25,6 +52,7 @@ export const CATEGORY_ICONS: Record<Category, string> = {
   health:        '🏥',
   transfer:      '↔️',
   fee:           '📋',
+  alcohol:       '🍺',
   other:         '📦',
 };
 
@@ -39,6 +67,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   health:        'Health',
   transfer:      'Transfer',
   fee:           'Bank Fee',
+  alcohol:       'Alcohol',
   other:         'Other',
 };
 

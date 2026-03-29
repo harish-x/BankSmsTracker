@@ -249,3 +249,4 @@ app.http('updateMerchantCategory', {
         }
     }
 });
+

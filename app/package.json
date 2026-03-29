@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
+    "@react-native-community/netinfo": "11.5.2",
     "@react-navigation/bottom-tabs": "^7.15.5",
     "@react-navigation/elements": "^2.9.10",
     "@react-navigation/native": "^7.1.33",
@@ -51,6 +52,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~55.0.0",
     "patch-package": "^8.0.1",
     "typescript": "~5.9.2"
   },
