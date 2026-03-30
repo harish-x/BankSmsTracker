@@ -47,7 +47,7 @@ resource "azurerm_function_app_flex_consumption" "function_app_expensetracker" {
     "APPINSIGHTS_SAMPLING_PERCENTAGE"       = "100"
     "MONGO_URI"                             = var.mongo_uri
     "MONGO_DB"                              = var.mongo_db
-    "AZURE_SUBSCRIPTION_ID"                 = "2825ca34-e016-403b-b58b-3d95d178aaae"
+    "AZURE_SUBSCRIPTION_ID"                 = var.AZURE_SUBSCRIPTION_ID
     "RESOURCE_GROUP"                        = azurerm_resource_group.expensetracker-rg.name
     "JWT_SECRET"                            = var.CLIENT_JWT_SECRET
   }

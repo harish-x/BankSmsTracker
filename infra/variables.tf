@@ -26,3 +26,7 @@ variable "CLIENT_JWT_SECRET" {
 variable "AZUREAD_APP_TENANT_ID" {
   type = string
 }
+
+variable "AZURE_SUBSCRIPTION_ID" {
+  type = string
+}

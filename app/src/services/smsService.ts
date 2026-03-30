@@ -7,33 +7,33 @@
  * Only works on Android (iOS has no SMS read API).
  */
 
-import { PermissionsAndroid, Platform } from 'react-native';
-import SmsAndroid from 'react-native-get-sms-android';
+import { PermissionsAndroid, Platform } from "react-native";
+import SmsAndroid from "react-native-get-sms-android";
 
-import { insertTransaction, transactionExists } from './dbService';
-import { parseBankSms } from '@/utils/smsParser';
+import { insertTransaction, transactionExists } from "./dbService";
+import { parseBankSms } from "@/utils/smsParser";
 
 // ─── Permission ───────────────────────────────────────────────────────────────
 
 /** Asks for READ_SMS permission if not already granted. Returns true if granted. */
 export async function requestSmsPermission(): Promise<boolean> {
-  if (Platform.OS !== 'android') return false;
+  if (Platform.OS !== "android") return false;
 
   const already = await PermissionsAndroid.check(
-    PermissionsAndroid.PERMISSIONS.READ_SMS
+    PermissionsAndroid.PERMISSIONS.READ_SMS,
   );
   if (already) return true;
 
   const result = await PermissionsAndroid.request(
     PermissionsAndroid.PERMISSIONS.READ_SMS,
     {
-      title: 'SMS Permission Needed',
+      title: "SMS Permission Needed",
       message:
-        'Finance Tracker reads your bank SMS messages to track income and expenses. ' +
-        'No messages are shared without your consent.',
-      buttonPositive: 'Allow',
-      buttonNegative: 'Deny',
-    }
+        "Finance Tracker reads your bank SMS messages to track income and expenses. " +
+        "No messages are shared without your consent.",
+      buttonPositive: "Allow",
+      buttonNegative: "Deny",
+    },
   );
   return result === PermissionsAndroid.RESULTS.GRANTED;
 }
@@ -41,14 +41,22 @@ export async function requestSmsPermission(): Promise<boolean> {
 // ─── Read inbox ───────────────────────────────────────────────────────────────
 
 /** Wraps the callback-based SmsAndroid.list in a Promise. */
-function readSmsInbox(fromDate: number): Promise<Array<{ body: string; address: string; date: string }>> {
+function readSmsInbox(
+  fromDate: number,
+): Promise<Array<{ body: string; address: string; date: string }>> {
   return new Promise((resolve, reject) => {
     const filter = {
-      box:       'inbox',
-      minDate:   fromDate,
-      // Java regex — match any SMS mentioning HDFC or Kotak
-      bodyRegex: '.*(HDFC|Kotak).*',
-      maxCount:  100,
+      box: "inbox",
+      minDate: fromDate,
+      bodyRegex:
+        "^(?!.*(OTP|otp|one.?time.?password|verification.?code|login.?otp|transaction.?otp|secure.?code|passcode|2.?factor|2fa|" +
+        "offer|promo|promotion|discount|cashback|reward|points.?redeemed|scratch.?card|claim.?now|limited.?time|" +
+        "flat.?\\d+%|upto|free|FREE|Lifetime|lifetime|Credit.?Card|voucher|reminder|T\\&C|" +
+        "hi |hello |dear |thanks.?for|warm.?greetings|regards|" +
+        "https?://|www\\.|\\.in\\/|\\.com\\/)).*" +
+        "(credited|debited|sent|deposited|withdrawn|charged|paid|transfer|withdraw|failed|declined|reversal|emi|ref|\\.Avl|" +
+        "Rs\\.?\\s*\\d|INR\\s*\\d|A/?c|account|upi|imps|neft|rtgs|wallet).*$",
+      maxCount: 100,
     };
 
     SmsAndroid.list(
@@ -65,7 +73,7 @@ function readSmsInbox(fromDate: number): Promise<Array<{ body: string; address: 
         } catch {
           resolve([]);
         }
-      }
+      },
     );
   });
 }
@@ -107,7 +115,7 @@ export async function checkAndSaveSms(): Promise<number> {
 
     await insertTransaction({
       ...parsed,
-      synced:    0,
+      synced: 0,
       createdAt: new Date().toISOString(),
     });
     saved++;

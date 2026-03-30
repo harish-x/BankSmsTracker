@@ -181,8 +181,6 @@ function AppLayout() {
             ),
           }}
         />
-        {/* Hide old explore tab */}
-        <Tabs.Screen name="explore" options={{ href: null }} />
         <Tabs.Screen name="transaction/[id]" options={{ href: null }} />
       </Tabs>
     </ThemeProvider>
