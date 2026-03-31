@@ -22,17 +22,19 @@ app.http('expensemetric', {
             await connectToDatabase();
 
             const body = await request.json();
+            context.log('REQUEST BODY:', JSON.stringify(body));
             const { message } = body;
 
             if (!message) {
-                return { status: 400, jsonBody: { error: "Message required" } };
+                const res = { status: 400, jsonBody: { error: "Message required" } };
+                context.log('RESPONSE BODY:', JSON.stringify(res.jsonBody));
+                return res;
             }
 
             if (!isTransactionMessage(message)) {
-                return {
-                    status: 200,
-                    jsonBody: { message: "Ignored" }
-                };
+                const res = { status: 200, jsonBody: { message: "Ignored" } };
+                context.log('RESPONSE BODY:', JSON.stringify(res.jsonBody));
+                return res;
             }
             const parsed = parseSMS(message);
 
@@ -42,7 +44,9 @@ app.http('expensemetric', {
                     raw_message: message
                 });
 
-                return { status: 200, jsonBody: { message: "Stored unparsed SMS" } };
+                const res = { status: 200, jsonBody: { message: "Stored unparsed SMS" } };
+                context.log('RESPONSE BODY:', JSON.stringify(res.jsonBody));
+                return res;
             }
 
             let accountDoc = null;
@@ -81,22 +85,23 @@ app.http('expensemetric', {
                 merchant: merchant?._id
             });
 
-            return {
-                status: 200,
+            const res = {
+                status: 201,
                 jsonBody: {
                     message: "Transaction stored",
                     transaction
                 }
             };
+            context.log('RESPONSE BODY:', JSON.stringify(res.jsonBody));
+            return res;
 
         } catch (err) {
             context.log('ERROR:', err.message);
             context.log('Stack:', err.stack);
 
-            return {
-                status: 500,
-                jsonBody: { error: err.message || "Internal server error" }
-            };
+            const res = { status: 500, jsonBody: { error: err.message || "Internal server error" } };
+            context.log('RESPONSE BODY:', JSON.stringify(res.jsonBody));
+            return res;
         }
     }
 });
