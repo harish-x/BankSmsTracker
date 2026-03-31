@@ -151,7 +151,7 @@ async function resolveMerchant(userId, parsed) {
     if (!merchant) {
         let category_id = null;
         for (let rule of categoryRules) {
-            if (key.includes(rule.keyword)) {
+            if (normalized_key.includes(rule.keyword)) {
                 let category = await Category.findOne({
                     name: rule.name
                 });

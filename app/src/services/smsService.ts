@@ -49,7 +49,7 @@ function readSmsInbox(
       box: "inbox",
       minDate: fromDate,
       bodyRegex:
-        "^(?!.*(OTP|otp|one.?time.?password|verification.?code|login.?otp|transaction.?otp|secure.?code|passcode|2.?factor|2fa|" +
+        "(?s)^(?!.*(OTP|otp|one.?time.?password|verification.?code|login.?otp|transaction.?otp|secure.?code|passcode|2.?factor|2fa|" +
         "offer|promo|promotion|discount|cashback|reward|points.?redeemed|scratch.?card|claim.?now|limited.?time|" +
         "flat.?\\d+%|upto|free|FREE|Lifetime|lifetime|Credit.?Card|voucher|reminder|T\\&C|" +
         "hi |hello |dear |thanks.?for|warm.?greetings|regards|" +
